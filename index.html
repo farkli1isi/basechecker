@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Base Checker — Wallet & Airdrop</title>
+<script src="https://cdn.jsdelivr.net/npm/@farcaster/miniapp-sdk/dist/index.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -436,6 +437,11 @@
 
 <script>
 const MORALIS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjYzNDY3M2ViLTBkNWEtNDFjMS04MjExLWNmNTc1NTY3MzQ3NSIsIm9yZ0lkIjoiNTA4NzA2IiwidXNlcklkIjoiNTIzNDEzIiwidHlwZUlkIjoiYTdjZWRlNmYtNjVjNS00MzVjLWE0YjUtODZjMjdhMmU1YzljIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NzU1ODI3NjEsImV4cCI6NDkzMTM0Mjc2MX0._CUhneRq89B9hN294_dYOTXjhCP9WbWPfRuK5alUCOo';
+
+// Farcaster Mini App SDK init
+if (window.sdk) {
+  window.sdk.actions.ready();
+}
 const MORALIS_BASE = 'https://deep-index.moralis.io/api/v2.2';
 const CHAIN = 'base';
 
