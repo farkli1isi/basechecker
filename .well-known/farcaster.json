@@ -1,0 +1,17 @@
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "frame": {
+    "version": "1",
+    "name": "Base Checker",
+    "iconUrl": "https://basechecker-two.vercel.app/icon.png",
+    "homeUrl": "https://basechecker-two.vercel.app",
+    "imageUrl": "https://basechecker-two.vercel.app/og.png",
+    "buttonTitle": "Check Wallet",
+    "splashImageUrl": "https://basechecker-two.vercel.app/splash.png",
+    "splashBackgroundColor": "#070B14"
+  }
+}
