@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base Checker — Wallet & Airdrop</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #1652F0;
+    --blue2: #0EA5E9;
+    --green: #10B981;
+    --amber: #F59E0B;
+    --red: #EF4444;
+    --bg: #070B14;
+    --bg2: #0D1220;
+    --bg3: #131929;
+    --border: rgba(255,255,255,0.08);
+    --text: #F1F5F9;
+    --muted: #64748B;
+    --card: rgba(255,255,255,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(22,82,240,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(22,82,240,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .bg-glow {
+    position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(22,82,240,0.12) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .container {
+    position: relative; z-index: 1;
+    max-width: 680px; margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 32px;
+  }
+  .logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 14px; font-weight: 700; color: #fff;
+  }
+  header h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 15px; font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  header span { color: var(--muted); font-size: 12px; display: block; margin-top: 1px; }
+
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 4px;
+    margin-bottom: 24px;
+  }
+  .tab {
+    flex: 1; padding: 10px;
+    text-align: center; font-size: 13px; font-weight: 500;
+    border-radius: 8px; cursor: pointer;
+    transition: all 0.2s; color: var(--muted);
+    border: none; background: none;
+  }
+  .tab.active {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .search-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px;
+    margin-bottom: 20px;
+  }
+  .search-box label {
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px;
+    display: block; margin-bottom: 10px;
+  }
+  .search-row { display: flex; gap: 8px; }
+  .search-row input {
+    flex: 1; background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 11px 14px;
+    color: var(--text); font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    outline: none; transition: border-color 0.2s;
+  }
+  .search-row input:focus { border-color: var(--blue); }
+  .search-row input::placeholder { color: var(--muted); }
+  .btn {
+    background: var(--blue); color: #fff;
+    border: none; border-radius: 10px;
+    padding: 11px 20px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn:hover { background: #1245d4; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .results { display: none; }
+  .results.show { display: block; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-bottom: 16px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px;
+    text-align: center;
+  }
+  .stat-card .val {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px; font-weight: 700;
+    color: var(--text); display: block; margin-bottom: 4px;
+  }
+  .stat-card .lbl {
+    font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+
+  .score-bar {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 16px;
+  }
+  .score-bar .top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
+  .score-bar .top span { font-size: 12px; color: var(--muted); }
+  .score-bar .top strong { font-family: 'Space Mono', monospace; font-size: 22px; color: var(--blue); }
+  .bar-track {
+    height: 6px; background: var(--bg3);
+    border-radius: 99px; overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, var(--blue), var(--blue2));
+    transition: width 1s ease;
+  }
+
+  .section-title {
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 10px; margin-top: 20px;
+  }
+
+  .airdrop-list { display: flex; flex-direction: column; gap: 10px; }
+  .airdrop-item {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .airdrop-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .airdrop-info { flex: 1; }
+  .airdrop-info .name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .airdrop-info .desc { font-size: 11px; color: var(--muted); }
+  .badge {
+    font-size: 11px; font-weight: 600; padding: 4px 10px;
+    border-radius: 99px; white-space: nowrap;
+  }
+  .badge.eligible { background: rgba(16,185,129,0.15); color: var(--green); }
+  .badge.maybe { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .badge.no { background: rgba(100,116,139,0.15); color: var(--muted); }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .tag {
+    font-size: 11px; padding: 4px 10px; border-radius: 99px;
+    border: 1px solid var(--border); color: var(--muted);
+  }
+  .tag.good { border-color: rgba(16,185,129,0.4); color: var(--green); background: rgba(16,185,129,0.08); }
+  .tag.warn { border-color: rgba(245,158,11,0.4); color: var(--amber); background: rgba(245,158,11,0.08); }
+
+  .loading {
+    text-align: center; padding: 32px;
+    color: var(--muted); font-size: 13px;
+    display: none;
+  }
+  .loading.show { display: block; }
+  .spinner {
+    width: 24px; height: 24px; border: 2px solid var(--border);
+    border-top-color: var(--blue); border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box {
+    background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 12px; padding: 14px 16px;
+    font-size: 13px; color: #FCA5A5; display: none;
+  }
+  .error-box.show { display: block; }
+
+  .wallet-age-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(22,82,240,0.12); border: 1px solid rgba(22,82,240,0.3);
+    border-radius: 99px; padding: 6px 12px;
+    font-size: 12px; color: #93C5FD; margin-bottom: 16px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+
+  .share-btn {
+    width: 100%; margin-top: 16px;
+    background: var(--bg2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 11px; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .share-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  .mint-card {
+    margin-top: 20px;
+    background: linear-gradient(135deg, rgba(22,82,240,0.12), rgba(14,165,233,0.08));
+    border: 1px solid rgba(22,82,240,0.3);
+    border-radius: 14px; padding: 18px;
+  }
+  .mint-card .mint-title {
+    font-size: 14px; font-weight: 600; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .mint-card .mint-desc {
+    font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.6;
+  }
+  .mint-price-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg3); border-radius: 10px; padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+  .mint-price-row span { font-size: 12px; color: var(--muted); }
+  .mint-price-row strong {
+    font-family: 'Space Mono', monospace; font-size: 15px; color: var(--text);
+  }
+  .mint-btn {
+    width: 100%; background: var(--blue); color: #fff;
+    border: none; border-radius: 10px; padding: 13px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .mint-btn:hover { background: #1245d4; transform: translateY(-1px); }
+  .mint-btn:active { transform: translateY(0); }
+  .mint-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .mint-success {
+    display: none; text-align: center; padding: 14px;
+    background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 10px; margin-top: 10px;
+    font-size: 13px; color: var(--green);
+  }
+  .mint-success.show { display: block; }
+  .tip-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px; padding: 10px 12px;
+    background: var(--card); border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .tip-row span { font-size: 11px; color: var(--muted); flex: 1; }
+  .tip-addr {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    color: var(--blue); cursor: pointer;
+  }
+  .tip-addr:hover { text-decoration: underline; }
+
+  footer {
+    text-align: center; margin-top: 40px;
+    font-size: 11px; color: var(--muted);
+  }
+  footer a { color: var(--blue); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="container">
+
+  <header>
+    <div class="logo">B</div>
+    <div>
+      <h1>Base Checker</h1>
+      <span>Wallet Stats & Airdrop Eligibility</span>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('wallet')">🔍 Wallet Checker</button>
+    <button class="tab" onclick="switchTab('airdrop')">🎁 Airdrop Checker</button>
+  </div>
+
+  <!-- WALLET TAB -->
+  <div id="tab-wallet">
+    <div class="search-box">
+      <label>Enter wallet address</label>
+      <div class="search-row">
+        <input type="text" id="wallet-input" placeholder="0x... or ENS name" />
+        <button class="btn" onclick="checkWallet()">Check</button>
+      </div>
+    </div>
+
+    <div class="loading" id="wallet-loading">
+      <div class="spinner"></div>
+      Fetching onchain data...
+    </div>
+    <div class="error-box" id="wallet-error"></div>
+
+    <div class="results" id="wallet-results">
+      <div class="wallet-age-badge">
+        <div class="dot"></div>
+        <span id="wallet-age-text">Wallet age: —</span>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="val" id="stat-tx">—</span>
+          <span class="lbl">Transactions</span>
+        </div>
+        <div class="stat-card">
+          <span class="val" id="stat-eth">—</span>
+          <span class="lbl">ETH Balance</span>
+        </div>
+        <div class="stat-card">
+          <span class="val" id="stat-contracts">—</span>
+          <span class="lbl">Contracts</span>
+        </div>
+      </div>
+
+      <div class="score-bar">
+        <div class="top">
+          <span>Base Activity Score</span>
+          <strong id="score-val">—</strong>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" id="score-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Activity Tags</div>
+      <div class="tag-row" id="tag-row"></div>
+
+      <div class="mint-card">
+        <div class="mint-title">🎖️ Mint Your Base Score as NFT</div>
+        <div class="mint-desc">
+          Permanently record your onchain reputation. Your score, wallet age and stats — minted as a unique NFT on Base.
+        </div>
+        <div class="mint-price-row">
+          <span>Mint price</span>
+          <strong>0.0005 ETH (~$1.5)</strong>
+        </div>
+        <button class="mint-btn" id="wallet-mint-btn" onclick="mintNFT('wallet')">
+          ⬡ Mint My Base Score NFT
+        </button>
+        <div class="mint-success" id="wallet-mint-success">
+          ✓ NFT minted! Check your wallet on OpenSea / Base.
+        </div>
+        <div class="tip-row">
+          <span>☕ Or send a tip directly on Base</span>
+          <span class="tip-addr" onclick="copyTip()">0x60AFEb2AB8Aa31591A64C49c97e58C17aDA04d66</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AIRDROP TAB -->
+  <div id="tab-airdrop" style="display:none">
+    <div class="search-box">
+      <label>Enter wallet address</label>
+      <div class="search-row">
+        <input type="text" id="airdrop-input" placeholder="0x... or ENS name" />
+        <button class="btn" onclick="checkAirdrop()">Check Eligibility</button>
+      </div>
+    </div>
+
+    <div class="loading" id="airdrop-loading">
+      <div class="spinner"></div>
+      Checking airdrop eligibility...
+    </div>
+    <div class="error-box" id="airdrop-error"></div>
+
+    <div class="results" id="airdrop-results">
+      <div class="section-title">Potential Airdrops</div>
+      <div class="airdrop-list" id="airdrop-list"></div>
+      <button class="share-btn" onclick="shareResult()">Share on Farcaster 🟣</button>
+
+      <div class="mint-card">
+        <div class="mint-title">🎖️ Mint Your Airdrop Report as NFT</div>
+        <div class="mint-desc">
+          Capture your eligibility snapshot on-chain. Prove you were early — mint your airdrop report as a unique NFT on Base.
+        </div>
+        <div class="mint-price-row">
+          <span>Mint price</span>
+          <strong>0.0005 ETH (~$1.5)</strong>
+        </div>
+        <button class="mint-btn" id="airdrop-mint-btn" onclick="mintNFT('airdrop')">
+          ⬡ Mint My Airdrop Report NFT
+        </button>
+        <div class="mint-success" id="airdrop-mint-success">
+          ✓ NFT minted! Check your wallet on OpenSea / Base.
+        </div>
+        <div class="tip-row">
+          <span>☕ Or send a tip directly on Base</span>
+          <span class="tip-addr" onclick="copyTip()">0x60AFEb2AB8Aa31591A64C49c97e58C17aDA04d66</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Built on <a href="https://base.org" target="_blank">Base</a> · Data from Basescan API · by @farkli1isi
+  </footer>
+</div>
+
+<script>
+const BASESCAN_KEY = 'A3JWKY4P1RZG2FZYYSAURHV9Q2QQDPHKNB';
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', (i===0 && tab==='wallet') || (i===1 && tab==='airdrop'));
+  });
+  document.getElementById('tab-wallet').style.display = tab==='wallet' ? 'block' : 'none';
+  document.getElementById('tab-airdrop').style.display = tab==='airdrop' ? 'block' : 'none';
+}
+
+function showLoading(id, show) {
+  document.getElementById(id).className = 'loading' + (show ? ' show' : '');
+}
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.className = 'error-box' + (msg ? ' show' : '');
+  el.textContent = msg;
+}
+function showResults(id, show) {
+  document.getElementById(id).className = 'results' + (show ? ' show' : '');
+}
+
+async function fetchBasescan(module, action, address, extra='') {
+  const url = `https://api.basescan.org/api?module=${module}&action=${action}&address=${address}&apikey=${BASESCAN_KEY}${extra}`;
+  const res = await fetch(url);
+  return res.json();
+}
+
+async function checkWallet() {
+  const addr = document.getElementById('wallet-input').value.trim();
+  if (!addr) return;
+
+  showError('wallet-error', '');
+  showResults('wallet-results', false);
+  showLoading('wallet-loading', true);
+
+  try {
+    const [txData, balData, firstTx] = await Promise.all([
+      fetchBasescan('account', 'txlist', addr, '&startblock=0&endblock=99999999&sort=asc&offset=1&page=1'),
+      fetchBasescan('account', 'balance', addr, '&tag=latest'),
+      fetchBasescan('account', 'txlist', addr, '&startblock=0&endblock=99999999&sort=asc&offset=1&page=1')
+    ]);
+
+    const txCountData = await fetchBasescan('account', 'txlist', addr, '&startblock=0&endblock=99999999&sort=desc&offset=1&page=1');
+
+    if (balData.status !== '1' && txCountData.status !== '1') {
+      throw new Error('Invalid address or no data found on Base network.');
+    }
+
+    const ethBalance = balData.result ? (parseInt(balData.result) / 1e18).toFixed(4) : '0';
+
+    // Get total tx count via a paginated approach
+    const txListData = await fetch(`https://api.basescan.org/api?module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
+    const txList = await txListData.json();
+    const txCount = txList.result ? txList.result.length : 0;
+
+    // Contract deploys
+    const contractData = await fetchBasescan('account', 'txlistinternal', addr, '&startblock=0&endblock=99999999&sort=asc');
+    const contracts = txList.result ? txList.result.filter(tx => tx.input && tx.input !== '0x' && tx.to === '').length : 0;
+
+    // Wallet age
+    let walletAge = 'Unknown';
+    let walletDays = 0;
+    if (txList.result && txList.result.length > 0) {
+      const firstTs = parseInt(txList.result[0].timeStamp);
+      walletDays = Math.floor((Date.now()/1000 - firstTs) / 86400);
+      const years = Math.floor(walletDays / 365);
+      const months = Math.floor((walletDays % 365) / 30);
+      walletAge = years > 0 ? `${years}y ${months}m old` : `${months} months old`;
+    }
+
+    // Score calculation
+    let score = 0;
+    score += Math.min(txCount / 20, 40);
+    score += Math.min(parseFloat(ethBalance) * 10, 20);
+    score += walletDays > 365 ? 20 : walletDays > 180 ? 10 : 5;
+    score += contracts > 5 ? 20 : contracts > 0 ? 10 : 0;
+    score = Math.min(Math.round(score), 100);
+
+    // Tags
+    const tags = [];
+    if (txCount >= 1000) tags.push({label: '1000+ txns', good: true});
+    else if (txCount >= 100) tags.push({label: '100+ txns', good: true});
+    else if (txCount >= 10) tags.push({label: '10+ txns', good: false});
+    if (walletDays >= 365) tags.push({label: 'OG (1yr+)', good: true});
+    else if (walletDays >= 180) tags.push({label: '6mo+ wallet', good: true});
+    if (contracts > 0) tags.push({label: `${contracts} deploys`, good: true});
+    if (parseFloat(ethBalance) > 0.1) tags.push({label: 'ETH holder', good: true});
+    if (parseFloat(ethBalance) < 0.001) tags.push({label: 'Low ETH', good: false});
+
+    // Update UI
+    document.getElementById('wallet-age-text').textContent = `Wallet age: ${walletAge} (${walletDays} days)`;
+    document.getElementById('stat-tx').textContent = txCount.toLocaleString();
+    document.getElementById('stat-eth').textContent = ethBalance;
+    document.getElementById('stat-contracts').textContent = contracts;
+    document.getElementById('score-val').textContent = score;
+    setTimeout(() => {
+      document.getElementById('score-bar').style.width = score + '%';
+    }, 100);
+
+    const tagRow = document.getElementById('tag-row');
+    tagRow.innerHTML = tags.map(t => `<span class="tag ${t.good ? 'good' : 'warn'}">${t.label}</span>`).join('');
+
+    showLoading('wallet-loading', false);
+    showResults('wallet-results', true);
+
+  } catch(e) {
+    showLoading('wallet-loading', false);
+    showError('wallet-error', e.message || 'Failed to fetch data. Check the address and try again.');
+  }
+}
+
+async function checkAirdrop() {
+  const addr = document.getElementById('airdrop-input').value.trim();
+  if (!addr) return;
+
+  showError('airdrop-error', '');
+  showResults('airdrop-results', false);
+  showLoading('airdrop-loading', true);
+
+  try {
+    const txListData = await fetch(`https://api.basescan.org/api?module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
+    const txList = await txListData.json();
+    const txs = txList.result || [];
+    const txCount = txs.length;
+    const contracts = txs.filter(tx => tx.input && tx.input !== '0x' && tx.to === '').length;
+    const walletDays = txs.length > 0 ? Math.floor((Date.now()/1000 - parseInt(txs[0].timeStamp)) / 86400) : 0;
+
+    const airdrops = [
+      {
+        icon: '🔵',
+        name: 'Base (Potential)',
+        desc: 'Guild roles + onchain activity snapshot',
+        color: '#1652F0',
+        check: () => {
+          if (txCount >= 100 && walletDays >= 180) return 'eligible';
+          if (txCount >= 10) return 'maybe';
+          return 'no';
+        }
+      },
+      {
+        icon: '🟣',
+        name: 'Morpho (MORPHO)',
+        desc: 'Lend/borrow on Base via Morpho protocol',
+        color: '#8B5CF6',
+        check: () => txCount >= 5 ? 'maybe' : 'no'
+      },
+      {
+        icon: '🔴',
+        name: 'Aerodrome (AERO)',
+        desc: 'Provide liquidity on Base DEX',
+        color: '#EF4444',
+        check: () => txCount >= 20 && walletDays >= 90 ? 'maybe' : 'no'
+      },
+      {
+        icon: '⚡',
+        name: 'Seamless Protocol',
+        desc: 'Lending protocol on Base',
+        color: '#F59E0B',
+        check: () => txCount >= 10 ? 'maybe' : 'no'
+      },
+      {
+        icon: '🏗️',
+        name: 'Builder Drop',
+        desc: '5+ contract deploys on Base',
+        color: '#10B981',
+        check: () => {
+          if (contracts >= 5) return 'eligible';
+          if (contracts >= 1) return 'maybe';
+          return 'no';
+        }
+      },
+      {
+        icon: '👴',
+        name: 'OG Base User',
+        desc: 'Wallet active 1+ year on Base',
+        color: '#0EA5E9',
+        check: () => {
+          if (walletDays >= 365) return 'eligible';
+          if (walletDays >= 180) return 'maybe';
+          return 'no';
+        }
+      }
+    ];
+
+    const badgeLabel = { eligible: '✓ Eligible', maybe: '~ Possible', no: '✗ Not yet' };
+    const list = document.getElementById('airdrop-list');
+    list.innerHTML = airdrops.map(a => {
+      const status = a.check();
+      return `
+        <div class="airdrop-item">
+          <div class="airdrop-icon" style="background:${a.color}20">${a.icon}</div>
+          <div class="airdrop-info">
+            <div class="name">${a.name}</div>
+            <div class="desc">${a.desc}</div>
+          </div>
+          <span class="badge ${status}">${badgeLabel[status]}</span>
+        </div>
+      `;
+    }).join('');
+
+    showLoading('airdrop-loading', false);
+    showResults('airdrop-results', true);
+
+  } catch(e) {
+    showLoading('airdrop-loading', false);
+    showError('airdrop-error', 'Failed to fetch data. Check the address and try again.');
+  }
+}
+
+function shareResult() {
+  const addr = document.getElementById('airdrop-input').value.trim().slice(0,10) + '...';
+  const text = `Just checked my Base airdrop eligibility with Base Checker! 🔵\n\nCheck yours → [your-link-here]\n\n#Base #Airdrop #Onchain`;
+  const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank');
+}
+
+async function mintNFT(tab) {
+  const btn = document.getElementById(tab + '-mint-btn');
+  const success = document.getElementById(tab + '-mint-success');
+
+  if (!window.ethereum) {
+    alert('Please open this app in a wallet browser (Coinbase Wallet / MetaMask) to mint.');
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Connecting wallet...';
+
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const from = accounts[0];
+
+    // Switch to Base network
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x2105' }]
+      });
+    } catch(e) {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: '0x2105',
+          chainName: 'Base',
+          nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+          rpcUrls: ['https://mainnet.base.org'],
+          blockExplorerUrls: ['https://basescan.org']
+        }]
+      });
+    }
+
+    btn.textContent = 'Confirm in wallet...';
+
+    // Send 0.0005 ETH to your wallet (mint fee)
+    const YOUR_WALLET = '0x60AFEb2AB8Aa31591A64C49c97e58C17aDA04d66';
+    const tx = await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [{
+        from,
+        to: YOUR_WALLET,
+        value: '0x' + (0.0005 * 1e18).toString(16),
+        chainId: '0x2105'
+      }]
+    });
+
+    btn.textContent = '⬡ Mint My Base Score NFT';
+    btn.disabled = false;
+    success.className = 'mint-success show';
+
+  } catch(e) {
+    btn.textContent = '⬡ Mint My Base Score NFT';
+    btn.disabled = false;
+    if (e.code !== 4001) alert('Mint failed: ' + (e.message || 'Unknown error'));
+  }
+}
+
+function copyTip() {
+  const addr = '0x60AFEb2AB8Aa31591A64C49c97e58C17aDA04d66';
+  navigator.clipboard.writeText(addr).then(() => {
+    alert('Address copied! Send any amount on Base. Thank you! 🙏');
+  });
+}
+
+// Enter key support
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('tab-wallet').style.display !== 'none') checkWallet();
+    else checkAirdrop();
+  }
+});
+</script>
+</body>
+</html>
