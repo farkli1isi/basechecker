@@ -1,17 +1,7 @@
 {
   "accountAssociation": {
-    "header": "",
-    "payload": "",
-    "signature": ""
-  },
-  "frame": {
-    "version": "1",
-    "name": "Base Checker",
-    "iconUrl": "https://basechecker-two.vercel.app/icon.png",
-    "homeUrl": "https://basechecker-two.vercel.app",
-    "imageUrl": "https://basechecker-two.vercel.app/og.png",
-    "buttonTitle": "Check Wallet",
-    "splashImageUrl": "https://basechecker-two.vercel.app/splash.png",
-    "splashBackgroundColor": "#070B14"
+    "header": "eyJmaWQiOjEzNTkxNDQsInR5cGUiOiJhdXRoIiwia2V5IjoiMHhFNzUyNjNFMjVDREMzQThFRkZDODcwRkRlQTUzMzczYjNkYTIyOWEwIn0",
+    "payload": "eyJkb21haW4iOiJiYXNlY2hlY2tlci10d28udmVyY2VsLmFwcCJ9",
+    "signature": "f1dHCciweXDDmqOyvn+lEtD7QNK7WTnsQH07J0kwIDJrWLsR/O2iuCfb4Rnzsa7kWBghaCO1DRjeh/l5jZrRSxw="
   }
 }
