@@ -458,9 +458,11 @@ function showResults(id, show) {
 }
 
 async function fetchBasescan(module, action, address, extra='') {
-  const url = `https://api.etherscan.io/v2/api?chainid=8453&module=${module}&action=${action}&address=${address}&apikey=${BASESCAN_KEY}${extra}`;
+  const target = `https://api.etherscan.io/v2/api?chainid=8453&module=${module}&action=${action}&address=${address}&apikey=${BASESCAN_KEY}${extra}`;
+  const url = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
   const res = await fetch(url);
-  return res.json();
+  const data = await res.json();
+  return JSON.parse(data.contents);
 }
 
 async function checkWallet() {
@@ -487,8 +489,10 @@ async function checkWallet() {
     const ethBalance = balData.result ? (parseInt(balData.result) / 1e18).toFixed(4) : '0';
 
     // Get total tx count via a paginated approach
-    const txListData = await fetch(`https://api.etherscan.io/v2/api?chainid=8453&module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
-    const txList = await txListData.json();
+    const _t1 = `https://api.etherscan.io/v2/api?chainid=8453&module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`;
+    const txListData = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(_t1)}`);
+    const txListRaw = await txListData.json();
+    const txList = JSON.parse(txListRaw.contents);
     const txCount = txList.result ? txList.result.length : 0;
 
     // Contract deploys
@@ -556,8 +560,10 @@ async function checkAirdrop() {
   showLoading('airdrop-loading', true);
 
   try {
-    const txListData = await fetch(`https://api.etherscan.io/v2/api?chainid=8453&module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
-    const txList = await txListData.json();
+    const _t2 = `https://api.etherscan.io/v2/api?chainid=8453&module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`;
+    const txListData = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(_t2)}`);
+    const txListRaw2 = await txListData.json();
+    const txList = JSON.parse(txListRaw2.contents);
     const txs = txList.result || [];
     const txCount = txs.length;
     const contracts = txs.filter(tx => tx.input && tx.input !== '0x' && tx.to === '').length;
