@@ -435,7 +435,7 @@
 </div>
 
 <script>
-const BASESCAN_KEY ='A3JWKY4P1RZG2FZYYSAURHV9Q2QQDPHKNB';
+const BASESCAN_KEY = 'A3JWKY4P1RZG2FZYYSAURHV9Q2QQDPHKNB';
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i) => {
@@ -458,7 +458,7 @@ function showResults(id, show) {
 }
 
 async function fetchBasescan(module, action, address, extra='') {
-  const url = `https://api.basescan.org/api?module=${module}&action=${action}&address=${address}&apikey=${BASESCAN_KEY}${extra}`;
+  const url = `https://api.etherscan.io/v2/api?chainid=8453&module=${module}&action=${action}&address=${address}&apikey=${BASESCAN_KEY}${extra}`;
   const res = await fetch(url);
   return res.json();
 }
@@ -487,7 +487,7 @@ async function checkWallet() {
     const ethBalance = balData.result ? (parseInt(balData.result) / 1e18).toFixed(4) : '0';
 
     // Get total tx count via a paginated approach
-    const txListData = await fetch(`https://api.basescan.org/api?module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
+    const txListData = await fetch(`https://api.etherscan.io/v2/api?chainid=8453&module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
     const txList = await txListData.json();
     const txCount = txList.result ? txList.result.length : 0;
 
@@ -556,7 +556,7 @@ async function checkAirdrop() {
   showLoading('airdrop-loading', true);
 
   try {
-    const txListData = await fetch(`https://api.basescan.org/api?module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
+    const txListData = await fetch(`https://api.etherscan.io/v2/api?chainid=8453&module=account&action=txlist&address=${addr}&startblock=0&endblock=99999999&sort=asc&apikey=${BASESCAN_KEY}`);
     const txList = await txListData.json();
     const txs = txList.result || [];
     const txCount = txs.length;
