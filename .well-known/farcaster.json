@@ -9,9 +9,7 @@
     "name": "Base Checker",
     "iconUrl": "https://basechecker-two.vercel.app/icon.png",
     "homeUrl": "https://basechecker-two.vercel.app",
-    "imageUrl": "https://basechecker-two.vercel.app/og.png",
-    "buttonTitle": "Check Wallet",
-    "splashImageUrl": "https://basechecker-two.vercel.app/splash.png",
-    "splashBackgroundColor": "#070B14"
+    "imageUrl": "https://placehold.co/1200x630/070B14/1652F0?text=Base+Checker",
+    "buttonTitle": "Check Wallet"
   }
 }
