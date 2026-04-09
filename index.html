@@ -442,9 +442,20 @@
 </div>
 
 <script>
-window.addEventListener('load', async () => {
-  try { const s = window.sdk||window.MiniAppSdk; if(s&&s.actions) await s.actions.ready(); } catch(e) {}
-});
+(async () => {
+  try {
+    // Wait for SDK to be available
+    let attempts = 0;
+    while (!window.sdk && !window.MiniAppSdk && attempts < 20) {
+      await new Promise(r => setTimeout(r, 100));
+      attempts++;
+    }
+    const s = window.sdk || window.MiniAppSdk;
+    if (s && s.actions && s.actions.ready) {
+      await s.actions.ready();
+    }
+  } catch(e) { console.log('SDK ready error:', e); }
+})();
 
 const MORALIS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjYzNDY3M2ViLTBkNWEtNDFjMS04MjExLWNmNTc1NTY3MzQ3NSIsIm9yZ0lkIjoiNTA4NzA2IiwidXNlcklkIjoiNTIzNDEzIiwidHlwZUlkIjoiYTdjZWRlNmYtNjVjNS00MzVjLWE0YjUtODZjMjdhMmU1YzljIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NzU1ODI3NjEsImV4cCI6NDkzMTM0Mjc2MX0._CUhneRq89B9hN294_dYOTXjhCP9WbWPfRuK5alUCOo';
 const MORALIS_BASE = 'https://deep-index.moralis.io/api/v2.2';
