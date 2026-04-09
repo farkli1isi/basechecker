@@ -8,7 +8,7 @@
 <meta property="og:description" content="Check your Base wallet score and airdrop eligibility." />
 <meta property="og:image" content="https://placehold.co/1200x630/070B14/1652F0?text=Base+Checker" />
 <meta name="fc:frame" content='{"version":"next","imageUrl":"https://placehold.co/1200x630/070B14/1652F0?text=Base+Checker","button":{"title":"Check Wallet","action":{"type":"launch_frame","name":"Base Checker","url":"https://basechecker-two.vercel.app","splashBackgroundColor":"#070B14"}}}' />
-<script src="https://cdn.jsdelivr.net/npm/@farcaster/miniapp-sdk/dist/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@farcaster/miniapp-sdk"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Base Checker — Wallet & Airdrop</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -444,17 +444,20 @@
 <script>
 (async () => {
   try {
-    // Wait for SDK to be available
     let attempts = 0;
-    while (!window.sdk && !window.MiniAppSdk && attempts < 20) {
+    while (!window.MiniappSdk && !window.sdk && attempts < 50) {
       await new Promise(r => setTimeout(r, 100));
       attempts++;
     }
-    const s = window.sdk || window.MiniAppSdk;
-    if (s && s.actions && s.actions.ready) {
-      await s.actions.ready();
+    const sdkObj = window.MiniappSdk || window.sdk;
+    if (sdkObj) {
+      const s = sdkObj.sdk || sdkObj;
+      if (s && s.actions && s.actions.ready) {
+        await s.actions.ready();
+        console.log('SDK ready called!');
+      }
     }
-  } catch(e) { console.log('SDK ready error:', e); }
+  } catch(e) { console.log('SDK error:', e); }
 })();
 
 const MORALIS_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjYzNDY3M2ViLTBkNWEtNDFjMS04MjExLWNmNTc1NTY3MzQ3NSIsIm9yZ0lkIjoiNTA4NzA2IiwidXNlcklkIjoiNTIzNDEzIiwidHlwZUlkIjoiYTdjZWRlNmYtNjVjNS00MzVjLWE0YjUtODZjMjdhMmU1YzljIiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NzU1ODI3NjEsImV4cCI6NDkzMTM0Mjc2MX0._CUhneRq89B9hN294_dYOTXjhCP9WbWPfRuK5alUCOo';
